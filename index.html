@@ -984,8 +984,8 @@ input[type=range]::-webkit-slider-thumb {
 const CFG = {
   DT: 0.1,                        // 10 Hz
   GRAVITY: 9.8,
-  HARSH_BRAKE_THRESH: 4.0,        // m/s² (adjustable)
-  SUDDEN_ACCEL_THRESH: 3.5,       // m/s²
+  HARSH_BRAKE_THRESH: 6.0,        // m/s² (adjustable)
+  SUDDEN_ACCEL_THRESH: 5.0,       // m/s²
   SHARP_TURN_THRESH: 45,          // deg/s
   SPEED_LIMIT_NORMAL: 50/3.6,     // m/s
   SPEED_LIMIT_HR: 30/3.6,         // m/s
@@ -1292,6 +1292,24 @@ function elapsedStr() {
 function processSample(ax, ay, az, gyroZ) {
   if (!S.running) return;
 
+  if ((Date.now() - S.rideStartMs) < 3000) return;
+
+  function applyDeadZone(value, threshold = 0.3) {
+    return Math.abs(value) < threshold ? 0 : value;
+    }
+
+    ax = applyDeadZone(ax);
+    ay = applyDeadZone(ay);
+    
+    const alpha = 0.9;
+    ax = alpha * prevX + (1 - alpha) * ax;
+    ay = alpha * prevY + (1 - alpha) * ay;
+    az = alpha * prevZ + (1 - alpha) * az;
+
+    prevX = ax;
+    prevY = ay;
+    prevZ = az;
+
   // Raw display
   $('s-ax').textContent = ax.toFixed(2);
   $('s-ay').textContent = ay.toFixed(2);
@@ -1306,7 +1324,8 @@ function processSample(ax, ay, az, gyroZ) {
   S.prevAx = ax;
 
   // Speed integration
-  S.speed = Math.max(0, S.speed + netAcc * CFG.DT);
+  // Limit unrealistic speed
+  S.speed = Math.max(0, Math.min(25, S.speed + netAcc * CFG.DT));
   if (S.speed > S.maxSpeed) S.maxSpeed = S.speed;
 
   // Deceleration & acceleration components
@@ -1619,6 +1638,15 @@ $('sens-slider').addEventListener('input', e => {
 window.addEventListener('load', () => {
   showScreen('home');
 });
+
+// 🔧 GPS SPEED (GLOBAL - works everywhere)
+if (navigator.geolocation) {
+    navigator.geolocation.watchPosition((pos) => {
+        if (pos.coords.speed !== null) {
+            S.speed = pos.coords.speed; // real speed in m/s
+        }
+    });
+}
 </script>
 </body>
 </html>
