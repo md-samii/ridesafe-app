@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080C10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>RideSafe — Rider Safety Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   DESIGN SYSTEM — Industrial-HUD Aesthetic
+   Built for dashboard use while riding
+   High contrast, large targets, low distraction
+═══════════════════════════════════════ */
+:root {
+  --bg-deep:    #080C10;
+  --bg-panel:   #0E1318;
+  --bg-card:    #131A22;
+  --bg-raised:  #1A2330;
+  --border:     rgba(255,255,255,0.07);
+  --border-glow:rgba(255,255,255,0.15);
+
+  --safe:       #22C55E;
+  --safe-dim:   rgba(34,197,94,0.12);
+  --safe-glow:  rgba(34,197,94,0.35);
+
+  --warn:       #F59E0B;
+  --warn-dim:   rgba(245,158,11,0.12);
+  --warn-glow:  rgba(245,158,11,0.35);
+
+  --risky:      #EF4444;
+  --risky-dim:  rgba(239,68,68,0.12);
+  --risky-glow: rgba(239,68,68,0.35);
+
+  --accent:     #38BDF8;
+  --accent-dim: rgba(56,189,248,0.12);
+  --hr-zone:    rgba(251,146,60,0.18);
+  --hr-color:   #FB923C;
+
+  --text:       #E8EDF2;
+  --muted:      #5A6A7A;
+  --subtle:     #3A4A5A;
+
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Screens ── */
+.screen { position:absolute; inset:0; display:none; flex-direction:column; overflow:hidden; }
+.screen.active { display:flex; }
+
+/* ═══════════════════════════════
+   SCREEN 1 — HOME / SPLASH
+═══════════════════════════════ */
+#screen-home {
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+
+.home-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 110%, rgba(34,197,94,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 20% -10%, rgba(56,189,248,0.05) 0%, transparent 60%);
+}
+
+/* Grid lines */
+.grid-lines {
+  position: absolute; inset: 0; overflow: hidden; opacity: 0.4;
+}
+.grid-lines::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.home-content {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 8px; padding: 0 24px;
+  text-align: center;
+}
+
+.app-wordmark {
+  font-family: var(--font-display);
+  font-size: 52px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+  color: var(--text);
+}
+.app-wordmark span { color: var(--safe); }
+
+.app-tagline {
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+
+.home-badge {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--muted);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 30px;
+  padding: 6px 16px;
+  margin-bottom: 32px;
+}
+.home-badge-dot { width:6px; height:6px; border-radius:50%; background: var(--safe); }
+
+.btn-start {
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: conic-gradient(from 180deg, var(--safe) 0%, #16A34A 100%);
+  border: none;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  position: relative;
+  box-shadow: 0 0 60px var(--safe-glow), 0 0 120px rgba(34,197,94,0.1);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-start::before {
+  content: '';
+  position: absolute; inset: 6px;
+  border-radius: 50%;
+  background: var(--bg-deep);
+}
+.btn-start:active { transform: scale(0.96); }
+.btn-start-inner { position: relative; z-index: 1; text-align: center; }
+.btn-start-icon { font-size: 40px; line-height: 1; }
+.btn-start-label {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin-top: 4px;
+}
+.btn-start-sub { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+
+.home-features {
+  display: flex; gap: 12px; margin-top: 36px; flex-wrap: wrap; justify-content: center;
+}
+.feat-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 30px; padding: 6px 14px;
+  font-size: 12px; color: var(--muted);
+}
+.feat-chip svg { width:13px; height:13px; flex-shrink:0; }
+
+
+/* ═══════════════════════════════
+   SCREEN 2 — RIDE (MAIN HUD)
+═══════════════════════════════ */
+#screen-ride {
+  background: var(--bg-deep);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+#screen-ride::-webkit-scrollbar { display: none; }
+
+/* Top bar */
+.ride-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px 10px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 50;
+  background: var(--bg-deep);
+}
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.topbar-logo { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.topbar-logo span { color: var(--safe); }
+.live-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--safe-dim); border: 1px solid var(--safe-glow);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; font-weight: 600; color: var(--safe);
+  letter-spacing: 0.8px;
+}
+.live-pill-dot { width:5px; height:5px; border-radius:50%; background:var(--safe); animation: blink 1.2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+.sim-badge {
+  background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 10px; color: var(--accent); font-weight: 600; letter-spacing: 0.5px;
+  display: none;
+}
+.topbar-right { display:flex; align-items:center; gap:8px; }
+#btn-stop {
+  background: var(--risky-dim); border: 1px solid rgba(239,68,68,0.3);
+  color: var(--risky); border-radius: 8px;
+  padding: 7px 14px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: var(--font-display); letter-spacing: 0.5px;
+}
+#btn-stop:active { background: var(--risky-dim); transform: scale(0.97); }
+
+/* Alert Banner */
+#alert-banner {
+  margin: 10px 16px 0;
+  padding: 12px 16px;
+  border-radius: var(--r-md);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+#alert-banner.show {
+  opacity: 1; transform: translateY(0);
+}
+#alert-banner.brake  { background: var(--risky-dim);  border: 1px solid rgba(239,68,68,0.4);  color: var(--risky); }
+#alert-banner.accel  { background: var(--warn-dim);   border: 1px solid rgba(245,158,11,0.4); color: var(--warn); }
+#alert-banner.speed  { background: var(--warn-dim);   border: 1px solid rgba(245,158,11,0.4); color: var(--warn); }
+#alert-banner.turn   { background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.4); color: #A78BFA; }
+#alert-banner.hrzone { background: var(--hr-zone);    border: 1px solid rgba(251,146,60,0.5); color: var(--hr-color); }
+.alert-icon { font-size: 20px; flex-shrink: 0; }
+
+/* ── Score Panel ── */
+.score-panel {
+  margin: 12px 16px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+  transition: border-color 0.5s, box-shadow 0.5s;
+}
+.score-panel.safe   { border-color: rgba(34,197,94,0.25);  box-shadow: 0 0 30px rgba(34,197,94,0.06); }
+.score-panel.warn   { border-color: rgba(245,158,11,0.25); box-shadow: 0 0 30px rgba(245,158,11,0.06); }
+.score-panel.risky  { border-color: rgba(239,68,68,0.3);   box-shadow: 0 0 30px rgba(239,68,68,0.08); }
+
+/* Ring */
+.score-ring-wrap { position:relative; width:120px; height:120px; flex-shrink:0; }
+.score-ring-wrap svg { transform: rotate(-90deg); }
+.ring-track { fill:none; stroke: var(--bg-raised); stroke-width:10; }
+.ring-arc {
+  fill:none; stroke-width:10; stroke-linecap:round;
+  stroke-dasharray: 327;
+  stroke-dashoffset: 327;
+  transition: stroke-dashoffset 0.7s cubic-bezier(.4,0,.2,1), stroke 0.5s;
+}
+.score-ring-text {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+#score-display {
+  font-family: var(--font-display);
+  font-size: 44px; font-weight: 700;
+  line-height: 1; letter-spacing: -2px;
+  transition: color 0.5s;
+}
+.score-of { font-size: 11px; color: var(--muted); }
+
+.score-right { flex:1; }
+#status-label {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  transition: color 0.5s;
+}
+.score-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+.score-stats {
+  display: flex; gap: 16px; margin-top: 14px;
+}
+.stat-mini { text-align: center; }
+.stat-mini-val {
+  font-family: var(--font-display);
+  font-size: 18px; font-weight: 600; color: var(--text);
+}
+.stat-mini-lbl { font-size: 10px; color: var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+
+/* ── Zone Toggle ── */
+.zone-toggle-bar {
+  margin: 10px 16px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.zone-toggle-bar.active { border-color: rgba(251,146,60,0.4); background: rgba(251,146,60,0.05); }
+.zone-left { display:flex; flex-direction:column; gap:2px; }
+.zone-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.zone-info-txt { font-size: 11px; color: var(--muted); }
+.zone-right { display:flex; align-items:center; gap:10px; }
+.zone-switch {
+  width: 50px; height: 28px;
+  border-radius: 14px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  position: relative; cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+  flex-shrink: 0;
+}
+.zone-switch::after {
+  content:''; position:absolute; top:4px; left:4px;
+  width:18px; height:18px; border-radius:50%;
+  background: var(--muted);
+  transition: transform 0.25s, background 0.25s;
+}
+.zone-switch.on { background: rgba(251,146,60,0.25); border-color: rgba(251,146,60,0.5); }
+.zone-switch.on::after { transform: translateX(22px); background: var(--hr-color); }
+
+/* ── Metrics Grid ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 10px 16px 0;
+  flex-shrink: 0;
+}
+.metric-tile {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  transition: border-color 0.3s;
+}
+.metric-tile.alert-flash { animation: tileflash 0.5s ease; }
+@keyframes tileflash { 0%,100%{background:var(--bg-panel)} 50%{background:rgba(239,68,68,0.1)} }
+.metric-tile.wide { grid-column: 1 / -1; }
+.tile-label { font-size: 10px; color: var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:500; margin-bottom:6px; }
+.tile-value {
+  font-family: var(--font-display);
+  font-size: 32px; font-weight: 700;
+  line-height: 1; letter-spacing: -1px;
+  color: var(--text);
+  transition: color 0.3s;
+}
+.tile-unit { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 3px; }
+.tile-sub { font-size: 11px; color: var(--muted); margin-top: 5px; }
+.tile-bar {
+  height: 3px; background: var(--bg-raised);
+  border-radius: 2px; margin-top: 10px; overflow:hidden;
+}
+.tile-bar-fill {
+  height: 100%; border-radius: 2px;
+  background: var(--safe);
+  transition: width 0.4s ease, background 0.3s;
+}
+
+/* ── Live Chart ── */
+.chart-panel {
+  margin: 10px 16px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  flex-shrink: 0;
+}
+.chart-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom: 10px;
+}
+.chart-title { font-size: 11px; color: var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:500; }
+.chart-legend { display:flex; gap:12px; }
+.legend-item { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--muted); }
+.legend-dot { width:6px; height:6px; border-radius:50%; }
+canvas#liveChart { display:block; width:100% !important; }
+
+/* ── Events Feed ── */
+.events-panel {
+  margin: 10px 16px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  flex-shrink: 0;
+}
+.events-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.events-title { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:500; }
+#events-count-badge {
+  background: var(--bg-raised); border:1px solid var(--border);
+  border-radius:10px; padding:2px 8px;
+  font-size:11px; color:var(--muted);
+}
+#events-feed { display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto; }
+#events-feed::-webkit-scrollbar { width:3px; }
+#events-feed::-webkit-scrollbar-track { background:transparent; }
+#events-feed::-webkit-scrollbar-thumb { background:var(--subtle); border-radius:2px; }
+.event-row {
+  display:flex; align-items:center; gap:10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  animation: rowIn 0.2s ease;
+}
+@keyframes rowIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.event-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.event-dot.brake { background:var(--risky); }
+.event-dot.accel { background:var(--warn); }
+.event-dot.speed { background:var(--warn); }
+.event-dot.turn  { background:#A78BFA; }
+.event-msg { flex:1; font-size:12px; color:var(--text); }
+.event-hr-tag {
+  font-size:9px; padding:2px 6px; border-radius:4px;
+  background: rgba(251,146,60,0.15); color:var(--hr-color); font-weight:600;
+  letter-spacing:0.5px; flex-shrink:0;
+}
+.event-ts { font-size:10px; color:var(--muted); flex-shrink:0; }
+.no-events-msg { font-size:12px; color:var(--muted); text-align:center; padding:16px 0; }
+
+/* ── Sensitivity ── */
+.sens-panel {
+  margin: 10px 16px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.sens-label { font-size:12px; color:var(--muted); white-space:nowrap; }
+input[type=range] {
+  flex:1; height:4px; cursor:pointer;
+  accent-color: var(--accent);
+  -webkit-appearance:none;
+  background: var(--bg-raised);
+  border-radius:2px;
+  outline:none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:18px; height:18px;
+  border-radius:50%;
+  background: var(--accent);
+  cursor:pointer;
+}
+.sens-val { font-size:12px; color:var(--text); min-width:60px; text-align:right; font-family:var(--font-display); }
+
+/* ── Spacer at bottom ── */
+.bottom-spacer { height: 24px; flex-shrink:0; }
+
+/* ── Voice button ── */
+#voice-toggle {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding:7px 10px;
+  cursor:pointer; display:flex; align-items:center; gap:5px;
+  font-size:11px; color:var(--muted);
+  transition: border-color 0.2s, color 0.2s;
+}
+#voice-toggle.on { border-color: var(--accent); color: var(--accent); }
+#voice-toggle svg { width:14px; height:14px; }
+
+
+/* ═══════════════════════════════
+   SCREEN 3 — POST-RIDE SUMMARY
+═══════════════════════════════ */
+#screen-summary {
+  background: var(--bg-deep);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#screen-summary::-webkit-scrollbar { display:none; }
+
+.summary-header {
+  padding: 20px 20px 0;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.summary-title {
+  font-family: var(--font-display);
+  font-size: 26px; font-weight: 700; letter-spacing:-0.5px;
+}
+.summary-date { font-size:12px; color:var(--muted); margin-top:2px; }
+#btn-new-ride {
+  background: var(--safe); color: #000;
+  border:none; border-radius:var(--r-sm);
+  padding:9px 18px; font-size:13px; font-weight:700;
+  cursor:pointer; font-family:var(--font-display); letter-spacing:0.5px;
+  flex-shrink:0;
+}
+
+/* Score Hero */
+.summary-score-hero {
+  margin: 20px 20px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 28px;
+  display:flex; align-items:center; gap:24px;
+}
+.summary-ring-wrap { position:relative; width:130px; height:130px; flex-shrink:0; }
+.summary-ring-wrap svg { transform: rotate(-90deg); }
+.s-ring-track { fill:none; stroke:var(--bg-raised); stroke-width:11; }
+.s-ring-arc {
+  fill:none; stroke-width:11; stroke-linecap:round;
+  stroke-dasharray: 352;
+}
+.summary-ring-text {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+#s-score-num {
+  font-family:var(--font-display); font-size:46px; font-weight:700;
+  letter-spacing:-2px; line-height:1;
+}
+.summary-grade-wrap { flex:1; }
+#s-grade {
+  font-family:var(--font-display); font-size:40px; font-weight:700;
+  line-height:1; letter-spacing:-1px;
+}
+#s-status { font-size:14px; font-weight:500; margin-top:4px; }
+#s-tip { font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5; }
+
+/* Stats cards */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 20px 0;
+}
+.sum-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px;
+}
+.sum-card.wide { grid-column: 1/-1; }
+.sum-card-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+.sum-card-val {
+  font-family: var(--font-display);
+  font-size:30px; font-weight:700; line-height:1; letter-spacing:-1px; color:var(--text);
+}
+.sum-card-unit { font-size:12px; color:var(--muted); font-weight:400; }
+.sum-card-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+
+/* Events breakdown */
+.events-breakdown {
+  margin: 12px 20px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px;
+}
+.breakdown-title { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+.breakdown-row {
+  display:flex; align-items:center; gap:12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+.breakdown-row:last-child { border-bottom:none; }
+.breakdown-icon {
+  width:32px; height:32px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; flex-shrink:0;
+}
+.breakdown-info { flex:1; }
+.breakdown-name { font-size:13px; font-weight:500; color:var(--text); }
+.breakdown-detail { font-size:11px; color:var(--muted); margin-top:2px; }
+.breakdown-count {
+  font-family:var(--font-display); font-size:22px; font-weight:700;
+}
+.breakdown-bar { height:3px; background:var(--bg-raised); border-radius:2px; margin-top:6px; }
+.breakdown-bar-fill { height:100%; border-radius:2px; transition:width 1s ease; }
+
+/* Suggestions */
+.suggestions-panel {
+  margin: 12px 20px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px;
+}
+.suggestions-title { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; }
+.suggestion-item {
+  display:flex; gap:12px; padding:8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.suggestion-item:last-child { border-bottom:none; }
+.suggestion-num {
+  width:22px; height:22px; border-radius:50%;
+  background: var(--accent-dim); color:var(--accent);
+  font-size:11px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; margin-top:1px;
+}
+.suggestion-txt { font-size:12px; color:var(--text); line-height:1.5; }
+
+/* Chart in summary */
+.summary-chart-panel {
+  margin: 12px 20px 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 14px;
+}
+.sum-bottom-spacer { height: 32px; }
+
+/* Permission message */
+#perm-note {
+  margin: 8px 16px 0;
+  padding: 10px 14px;
+  background: rgba(251,146,60,0.08);
+  border: 1px solid rgba(251,146,60,0.25);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  color: var(--hr-color);
+  line-height: 1.5;
+  display: none;
+  flex-shrink: 0;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════
+     SCREEN 1 — HOME
+═══════════════════════════════ -->
+<section class="screen active" id="screen-home">
+  <div class="home-bg"></div>
+  <div class="grid-lines"></div>
+  <div class="home-content">
+    <div class="app-wordmark">Ride<span>Safe</span></div>
+    <div class="app-tagline">Rider Safety Monitor</div>
+    <div class="home-badge">
+      <div class="home-badge-dot"></div>
+      Physics-Based · Context-Aware · Real-Time
+    </div>
+
+    <button class="btn-start" id="btn-begin">
+      <div class="btn-start-inner">
+        <div class="btn-start-icon">🏍</div>
+        <div class="btn-start-label">START RIDE</div>
+        <div class="btn-start-sub">TAP TO BEGIN</div>
+      </div>
+    </button>
+
+    <div class="home-features">
+      <div class="feat-chip">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>
+        Live Scoring
+      </div>
+      <div class="feat-chip">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8s2-4 6-4 6 4 6 4-2 4-6 4-6-4-6-4z"/><circle cx="8" cy="8" r="1.5"/></svg>
+        Behavior Detection
+      </div>
+      <div class="feat-chip">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v2M8 12v2M2 8h2M12 8h2"/><circle cx="8" cy="8" r="3"/></svg>
+        Voice Alerts
+      </div>
+      <div class="feat-chip">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/></svg>
+        Post-Ride Report
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════
+     SCREEN 2 — LIVE RIDE HUD
+═══════════════════════════════ -->
+<section class="screen" id="screen-ride">
+
+  <!-- Top Bar -->
+  <div class="ride-topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">Ride<span>Safe</span></div>
+      <div class="live-pill" id="live-pill">
+        <div class="live-pill-dot"></div> LIVE
+      </div>
+      <div class="sim-badge" id="sim-badge">SIMULATED</div>
+    </div>
+    <div class="topbar-right">
+      <button id="voice-toggle" class="on" title="Toggle voice alerts">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M5 6H3a1 1 0 00-1 1v2a1 1 0 001 1h2l3 3V3L5 6z"/>
+          <path d="M11.5 5.5a3 3 0 010 5M13.5 3.5a6 6 0 010 9" stroke-linecap="round"/>
+        </svg>
+        Voice
+      </button>
+      <button id="btn-stop">END RIDE</button>
+    </div>
+  </div>
+
+  <!-- Alert Banner -->
+  <div id="alert-banner">
+    <span class="alert-icon" id="alert-icon">⚠</span>
+    <span id="alert-text">Alert</span>
+  </div>
+
+  <!-- Permission note -->
+  <div id="perm-note"></div>
+
+  <!-- Score Panel -->
+  <div class="score-panel safe" id="score-panel">
+    <div class="score-ring-wrap">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle class="ring-track" cx="60" cy="60" r="52"/>
+        <circle class="ring-arc" id="ring-arc" cx="60" cy="60" r="52" stroke="#22C55E"/>
+      </svg>
+      <div class="score-ring-text">
+        <span id="score-display">100</span>
+        <span class="score-of">/100</span>
+      </div>
+    </div>
+    <div class="score-right">
+      <div id="status-label" style="color:var(--safe)">SAFE</div>
+      <div class="score-sub" id="score-sub">No events detected</div>
+      <div class="score-stats">
+        <div class="stat-mini">
+          <div class="stat-mini-val" id="stat-brakes">0</div>
+          <div class="stat-mini-lbl">Brakes</div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-val" id="stat-turns">0</div>
+          <div class="stat-mini-lbl">Turns</div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-val" id="stat-accel">0</div>
+          <div class="stat-mini-lbl">Accels</div>
+        </div>
+        <div class="stat-mini">
+          <div class="stat-mini-val" id="stat-overspeed">0</div>
+          <div class="stat-mini-lbl">Overspd</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zone Toggle -->
+  <div class="zone-toggle-bar" id="zone-bar">
+    <div class="zone-left">
+      <div class="zone-name" id="zone-name-txt">Normal Zone</div>
+      <div class="zone-info-txt" id="zone-info-txt">Speed limit: 50 km/h · Standard penalties</div>
+    </div>
+    <div class="zone-right">
+      <span style="font-size:11px;color:var(--muted)">High-Risk</span>
+      <div class="zone-switch" id="zone-switch"></div>
+    </div>
+  </div>
+
+  <!-- Metrics Grid -->
+  <div class="metrics-grid">
+    <div class="metric-tile" id="tile-speed">
+      <div class="tile-label">Speed</div>
+      <div class="tile-value"><span id="m-speed">0.0</span><span class="tile-unit">km/h</span></div>
+      <div class="tile-sub" id="m-speed-limit">Limit 50 km/h</div>
+      <div class="tile-bar"><div class="tile-bar-fill" id="bar-speed" style="width:0%;background:var(--safe)"></div></div>
+    </div>
+    <div class="metric-tile" id="tile-decel">
+      <div class="tile-label">Deceleration</div>
+      <div class="tile-value"><span id="m-decel">0.00</span><span class="tile-unit">m/s²</span></div>
+      <div class="tile-sub">Threshold: <span id="m-thresh">4.0</span></div>
+      <div class="tile-bar"><div class="tile-bar-fill" id="bar-decel" style="width:0%;background:var(--safe)"></div></div>
+    </div>
+    <div class="metric-tile" id="tile-accel">
+      <div class="tile-label">Acceleration</div>
+      <div class="tile-value"><span id="m-accel">0.00</span><span class="tile-unit">m/s²</span></div>
+      <div class="tile-sub">Jerk: <span id="m-jerk">0.00</span> m/s³</div>
+      <div class="tile-bar"><div class="tile-bar-fill" id="bar-accel" style="width:0%;background:var(--safe)"></div></div>
+    </div>
+    <div class="metric-tile" id="tile-turn">
+      <div class="tile-label">Turn Rate</div>
+      <div class="tile-value"><span id="m-turn">0.0</span><span class="tile-unit">°/s</span></div>
+      <div class="tile-sub">Sharp turn: >45°/s</div>
+      <div class="tile-bar"><div class="tile-bar-fill" id="bar-turn" style="width:0%;background:var(--safe)"></div></div>
+    </div>
+    <div class="metric-tile wide">
+      <div class="tile-label">Raw Sensor  ·  ax · ay · az</div>
+      <div style="display:flex;gap:0;margin-top:6px;">
+        <div style="flex:1;text-align:center;border-right:1px solid var(--border);padding:0 8px 0 0">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">ax (forward)</div>
+          <div id="s-ax" style="font-family:var(--font-display);font-size:22px;font-weight:700;color:#38BDF8">0.00</div>
+        </div>
+        <div style="flex:1;text-align:center;border-right:1px solid var(--border);padding:0 8px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">ay (lateral)</div>
+          <div id="s-ay" style="font-family:var(--font-display);font-size:22px;font-weight:700;color:#A78BFA">0.00</div>
+        </div>
+        <div style="flex:1;text-align:center;padding:0 0 0 8px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">az (vertical)</div>
+          <div id="s-az" style="font-family:var(--font-display);font-size:22px;font-weight:700;color:#4ADE80">0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sensitivity -->
+  <div class="sens-panel">
+    <span class="sens-label">Brake sensitivity</span>
+    <input type="range" id="sens-slider" min="2" max="10" step="0.5" value="4">
+    <span class="sens-val" id="sens-val">4.0 m/s²</span>
+  </div>
+
+  <!-- Live Chart -->
+  <div class="chart-panel">
+    <div class="chart-header">
+      <span class="chart-title">Acceleration  ·  Live</span>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#38BDF8"></div>ax forward</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#A78BFA"></div>ay lateral</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#F87171"></div>events</div>
+      </div>
+    </div>
+    <canvas id="liveChart" height="110"></canvas>
+  </div>
+
+  <!-- Events Feed -->
+  <div class="events-panel">
+    <div class="events-header">
+      <span class="events-title">Event Feed</span>
+      <span id="events-count-badge">0 events</span>
+    </div>
+    <div id="events-feed">
+      <div class="no-events-msg">No unsafe events detected — ride safely!</div>
+    </div>
+  </div>
+
+  <div class="bottom-spacer"></div>
+</section>
+
+<!-- ═══════════════════════════════
+     SCREEN 3 — POST-RIDE SUMMARY
+═══════════════════════════════ -->
+<section class="screen" id="screen-summary">
+  <div class="summary-header">
+    <div>
+      <div class="summary-title">Ride Report</div>
+      <div class="summary-date" id="s-date">—</div>
+    </div>
+    <button id="btn-new-ride">New Ride</button>
+  </div>
+
+  <!-- Score Hero -->
+  <div class="summary-score-hero" id="s-hero">
+    <div class="summary-ring-wrap">
+      <svg width="130" height="130" viewBox="0 0 130 130">
+        <circle class="s-ring-track" cx="65" cy="65" r="56"/>
+        <circle class="s-ring-arc" id="s-ring-arc" cx="65" cy="65" r="56" stroke="#22C55E" stroke-dashoffset="352"/>
+      </svg>
+      <div class="summary-ring-text">
+        <span id="s-score-num">—</span>
+      </div>
+    </div>
+    <div class="summary-grade-wrap">
+      <div id="s-grade">—</div>
+      <div id="s-status">—</div>
+      <div id="s-tip">—</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="summary-grid">
+    <div class="sum-card">
+      <div class="sum-card-lbl">Duration</div>
+      <div class="sum-card-val"><span id="s-duration">—</span><span class="sum-card-unit"> min</span></div>
+      <div class="sum-card-sub">Ride time</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-lbl">Max Speed</div>
+      <div class="sum-card-val"><span id="s-max-speed">—</span><span class="sum-card-unit"> km/h</span></div>
+      <div class="sum-card-sub">Peak reached</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-lbl">Total Events</div>
+      <div class="sum-card-val" id="s-events">—</div>
+      <div class="sum-card-sub" id="s-events-sub">—</div>
+    </div>
+    <div class="sum-card">
+      <div class="sum-card-lbl">Penalty Points</div>
+      <div class="sum-card-val" id="s-penalty">—</div>
+      <div class="sum-card-sub">Deducted from 100</div>
+    </div>
+  </div>
+
+  <!-- Breakdown -->
+  <div class="events-breakdown">
+    <div class="breakdown-title">Event Breakdown</div>
+    <div class="breakdown-row">
+      <div class="breakdown-icon" style="background:var(--risky-dim)">🛑</div>
+      <div class="breakdown-info">
+        <div class="breakdown-name">Harsh Braking</div>
+        <div class="breakdown-detail" id="bd-brake-detail">—</div>
+        <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bd-brake-bar" style="width:0%;background:var(--risky)"></div></div>
+      </div>
+      <div class="breakdown-count" id="bd-brake-count" style="color:var(--risky)">0</div>
+    </div>
+    <div class="breakdown-row">
+      <div class="breakdown-icon" style="background:var(--warn-dim)">⚡</div>
+      <div class="breakdown-info">
+        <div class="breakdown-name">Sudden Acceleration</div>
+        <div class="breakdown-detail" id="bd-accel-detail">—</div>
+        <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bd-accel-bar" style="width:0%;background:var(--warn)"></div></div>
+      </div>
+      <div class="breakdown-count" id="bd-accel-count" style="color:var(--warn)">0</div>
+    </div>
+    <div class="breakdown-row">
+      <div class="breakdown-icon" style="background:rgba(167,139,250,0.12)">↩</div>
+      <div class="breakdown-info">
+        <div class="breakdown-name">Sharp Turns</div>
+        <div class="breakdown-detail" id="bd-turn-detail">—</div>
+        <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bd-turn-bar" style="width:0%;background:#A78BFA"></div></div>
+      </div>
+      <div class="breakdown-count" id="bd-turn-count" style="color:#A78BFA">0</div>
+    </div>
+    <div class="breakdown-row">
+      <div class="breakdown-icon" style="background:var(--warn-dim)">📍</div>
+      <div class="breakdown-info">
+        <div class="breakdown-name">Overspeeding Frames</div>
+        <div class="breakdown-detail" id="bd-speed-detail">—</div>
+        <div class="breakdown-bar"><div class="breakdown-bar-fill" id="bd-speed-bar" style="width:0%;background:var(--warn)"></div></div>
+      </div>
+      <div class="breakdown-count" id="bd-speed-count" style="color:var(--warn)">0</div>
+    </div>
+  </div>
+
+  <!-- Suggestions -->
+  <div class="suggestions-panel">
+    <div class="suggestions-title">Improvement Suggestions</div>
+    <div id="suggestions-list"></div>
+  </div>
+
+  <!-- Summary chart -->
+  <div class="summary-chart-panel">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Acceleration Profile</div>
+    <canvas id="summaryChart" height="100"></canvas>
+  </div>
+
+  <div class="sum-bottom-spacer"></div>
+</section>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════
+//  RIDESAFE — Core Application
+// ═══════════════════════════════════════════════
+
+// ── CONFIG ──────────────────────────────────
+const CFG = {
+  DT: 0.1,                        // 10 Hz
+  GRAVITY: 9.8,
+  HARSH_BRAKE_THRESH: 4.0,        // m/s² (adjustable)
+  SUDDEN_ACCEL_THRESH: 3.5,       // m/s²
+  SHARP_TURN_THRESH: 45,          // deg/s
+  SPEED_LIMIT_NORMAL: 50/3.6,     // m/s
+  SPEED_LIMIT_HR: 30/3.6,         // m/s
+  CHART_WIN: 100,                  // samples in chart
+
+  PEN_BRAKE_NORMAL: 5,
+  PEN_BRAKE_HR: 10,
+  PEN_ACCEL_NORMAL: 4,
+  PEN_ACCEL_HR: 8,
+  PEN_TURN: 3,
+  PEN_OVERSPEED: 0.25,
+
+  VOICE_COOLDOWN_MS: 4000,         // min gap between voice alerts
+  ALERT_DISPLAY_MS: 2500,
+};
+
+// ── STATE ────────────────────────────────────
+const S = {
+  running: false,
+  inHR: false,
+  score: 100,
+  speed: 0,           // m/s
+  prevAx: 0,
+  jerk: 0,
+  brakeCount: 0,
+  brakeHR: 0,
+  accelCount: 0,
+  turnCount: 0,
+  overspeedFr: 0,
+  totalEvents: 0,
+  maxSpeed: 0,
+  penalty: 0,
+  axBuf: [],
+  ayBuf: [],
+  eventBuf: [],
+  chartAx: new Array(CFG.CHART_WIN).fill(0),
+  chartAy: new Array(CFG.CHART_WIN).fill(0),
+  chartEvents: new Array(CFG.CHART_WIN).fill(false),
+  sensorTimer: null,
+  rideStartMs: 0,
+  voiceLastMs: 0,
+  voiceOn: true,
+  alertTimer: null,
+  simPhase: 0,
+  simT: 0,
+  gotRealSensor: false,
+  sensorCheckTimer: null,
+};
+
+// ── DOM shortcuts ────────────────────────────
+const $ = id => document.getElementById(id);
+const show = id => { document.querySelector('#'+id).classList.add('active'); }
+const hide = id => { document.querySelector('#'+id).classList.remove('active'); }
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $('screen-'+name).classList.add('active');
+}
+
+// ── CANVAS SETUP ─────────────────────────────
+let lCtx, sCCtx, lCW = 0, lCH = 0, sCW = 0, sCH = 0;
+function initCharts() {
+  const lc = $('liveChart');
+  lCW = lc.parentElement.clientWidth - 28;
+  lCH = 110;
+  lc.width = lCW; lc.height = lCH;
+  lCtx = lc.getContext('2d');
+
+  const sc = $('summaryChart');
+  sCW = sc.parentElement.clientWidth - 28;
+  sCH = 100;
+  sc.width = sCW; sc.height = sCH;
+  sCCtx = sc.getContext('2d');
+}
+window.addEventListener('resize', initCharts);
+
+// ── DRAW LIVE CHART ──────────────────────────
+function drawLiveChart() {
+  if (!lCtx) return;
+  lCtx.clearRect(0, 0, lCW, lCH);
+  const step = lCW / (CFG.CHART_WIN - 1);
+  const mid = lCH / 2;
+  const scale = lCH / 22; // ±11 m/s²
+
+  // Grid
+  lCtx.strokeStyle = 'rgba(255,255,255,0.04)';
+  lCtx.lineWidth = 1;
+  [0.25,0.5,0.75].forEach(r => {
+    lCtx.beginPath(); lCtx.moveTo(0, lCH*r); lCtx.lineTo(lCW, lCH*r); lCtx.stroke();
+  });
+
+  // Zero line
+  lCtx.strokeStyle = 'rgba(255,255,255,0.1)';
+  lCtx.beginPath(); lCtx.moveTo(0,mid); lCtx.lineTo(lCW,mid); lCtx.stroke();
+
+  // Threshold lines
+  const brakeY = mid + CFG.HARSH_BRAKE_THRESH * scale;
+  const accelY = mid - CFG.SUDDEN_ACCEL_THRESH * scale;
+  lCtx.strokeStyle = 'rgba(239,68,68,0.25)';
+  lCtx.setLineDash([4,4]);
+  lCtx.beginPath(); lCtx.moveTo(0,brakeY); lCtx.lineTo(lCW,brakeY); lCtx.stroke();
+  lCtx.beginPath(); lCtx.moveTo(0,accelY); lCtx.lineTo(lCW,accelY); lCtx.stroke();
+  lCtx.setLineDash([]);
+
+  // Event highlights
+  S.chartEvents.forEach((ev, i) => {
+    if (ev) {
+      lCtx.fillStyle = 'rgba(239,68,68,0.12)';
+      lCtx.fillRect(i*step - step/2, 0, step, lCH);
+    }
+  });
+
+  // ay (lateral) line
+  lCtx.beginPath();
+  lCtx.strokeStyle = 'rgba(167,139,250,0.6)';
+  lCtx.lineWidth = 1.5;
+  S.chartAy.forEach((v,i) => {
+    const x = i*step, y = mid - v*scale;
+    i===0 ? lCtx.moveTo(x,y) : lCtx.lineTo(x,y);
+  });
+  lCtx.stroke();
+
+  // ax (forward) line
+  lCtx.beginPath();
+  lCtx.strokeStyle = '#38BDF8';
+  lCtx.lineWidth = 2;
+  S.chartAx.forEach((v,i) => {
+    const x = i*step, y = mid - v*scale;
+    i===0 ? lCtx.moveTo(x,y) : lCtx.lineTo(x,y);
+  });
+  lCtx.stroke();
+
+  // Event dots
+  S.chartAx.forEach((v,i) => {
+    if (S.chartEvents[i]) {
+      lCtx.beginPath();
+      lCtx.arc(i*step, mid - v*scale, 4, 0, Math.PI*2);
+      lCtx.fillStyle = '#F87171';
+      lCtx.fill();
+    }
+  });
+}
+
+// ── DRAW SUMMARY CHART ───────────────────────
+function drawSummaryChart(axData, events) {
+  if (!sCCtx || !axData.length) return;
+  sCCtx.clearRect(0,0,sCW,sCH);
+  const step = sCW / (axData.length-1||1);
+  const mid = sCH/2, scale = sCH/22;
+
+  sCCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+  sCCtx.lineWidth=1;
+  [0.25,0.5,0.75].forEach(r => {
+    sCCtx.beginPath(); sCCtx.moveTo(0,sCH*r); sCCtx.lineTo(sCW,sCH*r); sCCtx.stroke();
+  });
+  sCCtx.strokeStyle='rgba(255,255,255,0.08)';
+  sCCtx.beginPath(); sCCtx.moveTo(0,mid); sCCtx.lineTo(sCW,mid); sCCtx.stroke();
+
+  events.forEach((ev,i) => {
+    if(ev){ sCCtx.fillStyle='rgba(239,68,68,0.1)'; sCCtx.fillRect(i*step-step/2,0,step,sCH); }
+  });
+
+  sCCtx.beginPath();
+  sCCtx.strokeStyle='#38BDF8'; sCCtx.lineWidth=1.8;
+  axData.forEach((v,i) => {
+    const x=i*step, y=mid-v*scale;
+    i===0 ? sCCtx.moveTo(x,y) : sCCtx.lineTo(x,y);
+  });
+  sCCtx.stroke();
+}
+
+// ── VOICE ALERTS ─────────────────────────────
+const VOICES = {
+  brake: ["Harsh braking detected. Ease off the brakes.", "Too much braking. Slow down gradually."],
+  accel: ["Sudden acceleration. Ease on the throttle.", "Accelerating too fast. Stay smooth."],
+  turn:  ["Sharp turn ahead. Reduce speed.", "Take the turn slowly."],
+  speed: ["You are overspeeding. Slow down now.", "Reduce your speed. You are above the limit."],
+  hrzone:["You have entered a high-risk zone. Slow to 30.", "High-risk zone. Watch for pedestrians."],
+};
+let speechAvail = 'speechSynthesis' in window;
+let voiceQueue = [];
+let speaking = false;
+
+function speak(type) {
+  if (!S.voiceOn || !speechAvail) return;
+  const now = Date.now();
+  if (now - S.voiceLastMs < CFG.VOICE_COOLDOWN_MS) return;
+  S.voiceLastMs = now;
+  const phrases = VOICES[type];
+  const msg = phrases[Math.floor(Math.random() * phrases.length)];
+  const utt = new SpeechSynthesisUtterance(msg);
+  utt.rate = 0.95; utt.pitch = 1; utt.volume = 1;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utt);
+}
+
+// ── ALERT BANNER ─────────────────────────────
+const ALERT_CFG = {
+  brake:  { icon:'🛑', text:'HARSH BRAKING', cls:'brake' },
+  accel:  { icon:'⚡', text:'SUDDEN ACCELERATION', cls:'accel' },
+  speed:  { icon:'🚨', text:'OVERSPEEDING', cls:'speed' },
+  turn:   { icon:'↩', text:'SHARP TURN', cls:'turn' },
+  hrzone: { icon:'⚠', text:'HIGH-RISK ZONE ACTIVE', cls:'hrzone' },
+};
+function showAlert(type, extraTxt) {
+  const cfg = ALERT_CFG[type];
+  if (!cfg) return;
+  const banner = $('alert-banner');
+  $('alert-icon').textContent = cfg.icon;
+  $('alert-text').textContent = extraTxt ? `${cfg.text}  —  ${extraTxt}` : cfg.text;
+  banner.className = `show ${cfg.cls}`;
+  if (S.alertTimer) clearTimeout(S.alertTimer);
+  S.alertTimer = setTimeout(() => { banner.className = ''; }, CFG.ALERT_DISPLAY_MS);
+}
+
+// ── UPDATE SCORE UI ───────────────────────────
+function updateScoreUI() {
+  const s = Math.max(0, Math.round(S.score));
+  $('score-display').textContent = s;
+
+  // Ring: circumference = 2π×52 ≈ 327
+  const offset = 327 - (s/100)*327;
+  const arc = $('ring-arc');
+  arc.style.strokeDashoffset = offset;
+
+  let color, label, subTxt, panelCls;
+  if (s > 80) {
+    color='var(--safe)'; label='SAFE'; subTxt='Keep riding responsibly'; panelCls='safe';
+  } else if (s >= 50) {
+    color='var(--warn)'; label='MODERATE'; subTxt='Watch your behavior'; panelCls='warn';
+  } else {
+    color='var(--risky)'; label='RISKY'; subTxt='Multiple unsafe events detected'; panelCls='risky';
+  }
+  arc.style.stroke = color;
+  $('score-display').style.color = color;
+  $('status-label').textContent = label;
+  $('status-label').style.color = color;
+  $('score-sub').textContent = subTxt;
+  $('score-panel').className = 'score-panel ' + panelCls;
+}
+
+// ── METRIC TILES ─────────────────────────────
+function updateMetrics(ax, ay, speed, decel, accel, turnRate) {
+  const speedKmh = speed * 3.6;
+  const limit = (S.inHR ? CFG.SPEED_LIMIT_HR : CFG.SPEED_LIMIT_NORMAL) * 3.6;
+  const speedPct = Math.min(100, (speedKmh / (limit*1.5))*100);
+  const speedColor = speedKmh > limit ? 'var(--risky)' : speedKmh > limit*0.8 ? 'var(--warn)' : 'var(--safe)';
+
+  $('m-speed').textContent = speedKmh.toFixed(1);
+  $('m-speed-limit').textContent = `Limit ${limit.toFixed(0)} km/h`;
+  $('bar-speed').style.width = speedPct+'%';
+  $('bar-speed').style.background = speedColor;
+
+  const decelPct = Math.min(100,(decel/12)*100);
+  const decelColor = decel > CFG.HARSH_BRAKE_THRESH ? 'var(--risky)' : decel > CFG.HARSH_BRAKE_THRESH*0.7 ? 'var(--warn)' : 'var(--safe)';
+  $('m-decel').textContent = Math.max(0,decel).toFixed(2);
+  $('bar-decel').style.width = decelPct+'%';
+  $('bar-decel').style.background = decelColor;
+
+  const accelPct = Math.min(100,(Math.abs(accel)/8)*100);
+  const accelColor = accel > CFG.SUDDEN_ACCEL_THRESH ? 'var(--warn)' : 'var(--safe)';
+  $('m-accel').textContent = Math.abs(accel).toFixed(2);
+  $('m-jerk').textContent = Math.abs(S.jerk).toFixed(2);
+  $('bar-accel').style.width = accelPct+'%';
+  $('bar-accel').style.background = accelColor;
+
+  const turnPct = Math.min(100,(turnRate/90)*100);
+  const turnColor = turnRate > CFG.SHARP_TURN_THRESH ? '#A78BFA' : 'var(--safe)';
+  $('m-turn').textContent = Math.abs(turnRate).toFixed(1);
+  $('bar-turn').style.width = turnPct+'%';
+  $('bar-turn').style.background = turnColor;
+
+  $('s-ax').textContent = ax.toFixed(2);
+  $('s-ay').textContent = ay.toFixed(2);
+}
+
+// ── LOG EVENT ────────────────────────────────
+function logEvent(type, msg) {
+  S.totalEvents++;
+  $('events-count-badge').textContent = S.totalEvents + ' event' + (S.totalEvents!==1?'s':'');
+  const feed = $('events-feed');
+  const noEv = feed.querySelector('.no-events-msg');
+  if (noEv) noEv.remove();
+  const ts = elapsedStr();
+  const row = document.createElement('div');
+  row.className = 'event-row';
+  row.innerHTML = `
+    <div class="event-dot ${type}"></div>
+    <div class="event-msg">${msg}</div>
+    ${S.inHR ? '<span class="event-hr-tag">HIGH-RISK</span>' : ''}
+    <span class="event-ts">${ts}</span>
+  `;
+  feed.insertBefore(row, feed.firstChild);
+  while (feed.children.length > 25) feed.removeChild(feed.lastChild);
+
+  S.eventBuf.push({type, msg, inHR: S.inHR, ts});
+}
+
+function elapsedStr() {
+  const s = Math.round((Date.now() - S.rideStartMs)/1000);
+  return s<60 ? s+'s' : Math.floor(s/60)+'m'+String(s%60).padStart(2,'0')+'s';
+}
+
+// ── PROCESS SENSOR SAMPLE ────────────────────
+function processSample(ax, ay, az, gyroZ) {
+  if (!S.running) return;
+
+  // Raw display
+  $('s-ax').textContent = ax.toFixed(2);
+  $('s-ay').textContent = ay.toFixed(2);
+  $('s-az').textContent = az.toFixed(2);
+
+  // Net longitudinal acceleration (ax is forward axis, gravity on az)
+  const azDynamic = az - CFG.GRAVITY;
+  const netAcc = ax + azDynamic;
+
+  // Jerk (rate of change of acceleration)
+  S.jerk = (ax - S.prevAx) / CFG.DT;
+  S.prevAx = ax;
+
+  // Speed integration
+  S.speed = Math.max(0, S.speed + netAcc * CFG.DT);
+  if (S.speed > S.maxSpeed) S.maxSpeed = S.speed;
+
+  // Deceleration & acceleration components
+  const decel  = -ax;  // positive = braking
+  const accelF =  ax;  // positive = forward acceleration
+
+  // Turn rate from gyroscope (or lateral accel estimate)
+  const turnRate = gyroZ || Math.abs(ay) * 25; // fallback from lateral accel
+
+  // Chart buffers
+  S.chartAx.push(ax); S.chartAx.shift();
+  S.chartAy.push(ay); S.chartAy.shift();
+  S.axBuf.push(ax); S.ayBuf.push(ay);
+
+  let isEvent = false;
+
+  // ── Harsh braking ──
+  if (decel > CFG.HARSH_BRAKE_THRESH) {
+    S.brakeCount++;
+    if (S.inHR) S.brakeHR++;
+    const pen = S.inHR ? CFG.PEN_BRAKE_HR : CFG.PEN_BRAKE_NORMAL;
+    S.penalty += pen;
+    S.score = Math.max(0, S.score - pen);
+    showAlert('brake', `${decel.toFixed(1)} m/s²`);
+    speak('brake');
+    logEvent('brake', `Harsh braking ${decel.toFixed(1)} m/s²`);
+    $('stat-brakes').textContent = S.brakeCount;
+    isEvent = true;
+    $('tile-decel').classList.add('alert-flash');
+    setTimeout(() => $('tile-decel').classList.remove('alert-flash'), 500);
+  }
+
+  // ── Sudden acceleration ──
+  if (accelF > CFG.SUDDEN_ACCEL_THRESH) {
+    S.accelCount++;
+    const pen = S.inHR ? CFG.PEN_ACCEL_HR : CFG.PEN_ACCEL_NORMAL;
+    S.penalty += pen;
+    S.score = Math.max(0, S.score - pen);
+    showAlert('accel', `${accelF.toFixed(1)} m/s²`);
+    speak('accel');
+    logEvent('accel', `Sudden accel ${accelF.toFixed(1)} m/s²`);
+    $('stat-accel').textContent = S.accelCount;
+    isEvent = true;
+  }
+
+  // ── Sharp turn ──
+  if (turnRate > CFG.SHARP_TURN_THRESH) {
+    S.turnCount++;
+    S.penalty += CFG.PEN_TURN;
+    S.score = Math.max(0, S.score - CFG.PEN_TURN);
+    showAlert('turn', `${turnRate.toFixed(0)}°/s`);
+    speak('turn');
+    logEvent('turn', `Sharp turn ${turnRate.toFixed(0)}°/s`);
+    $('stat-turns').textContent = S.turnCount;
+    isEvent = true;
+  }
+
+  // ── Overspeeding ──
+  const limit = S.inHR ? CFG.SPEED_LIMIT_HR : CFG.SPEED_LIMIT_NORMAL;
+  if (S.speed > limit) {
+    S.overspeedFr++;
+    S.penalty += CFG.PEN_OVERSPEED;
+    S.score = Math.max(0, S.score - CFG.PEN_OVERSPEED);
+    if (S.overspeedFr % 20 === 1) {
+      showAlert('speed', `${(S.speed*3.6).toFixed(0)} km/h`);
+      speak('speed');
+      logEvent('speed', `Overspeeding ${(S.speed*3.6).toFixed(0)} km/h (limit ${(limit*3.6).toFixed(0)})`);
+      $('stat-overspeed').textContent = S.overspeedFr;
+      isEvent = true;
+    }
+  }
+
+  S.chartEvents.push(isEvent); S.chartEvents.shift();
+
+  updateMetrics(ax, ay, S.speed, decel, accelF, turnRate);
+  updateScoreUI();
+  drawLiveChart();
+}
+
+// ── SIMULATION ENGINE ────────────────────────
+function startSimulation() {
+  $('sim-badge').style.display = 'inline';
+  S.sensorTimer = setInterval(() => {
+    if (!S.running) return;
+    S.simT += CFG.DT;
+    const ph = Math.floor(S.simT / 4) % 8;
+    let ax=0, ay=0, gyZ=0;
+    if      (ph===0) { ax =  1.8 + Math.random()*0.3; ay = Math.random()*0.1-0.05; }
+    else if (ph===1) { ax =  0.3 + Math.random()*0.2; ay = Math.random()*0.15-0.075; }
+    else if (ph===2) { ax = -1.2 - Math.random()*0.5; ay = Math.random()*0.2-0.1; }
+    else if (ph===3) { ax = -(4.5+Math.random()*3.5); ay = Math.random()*0.3-0.15; } // harsh brake
+    else if (ph===4) { ax =  3.8 + Math.random()*0.5; ay = Math.random()*0.1; }     // sudden accel
+    else if (ph===5) { ax =  0.4 + Math.random()*0.2; ay = 0.6+Math.random()*0.4; gyZ = 55+Math.random()*20; } // sharp turn
+    else if (ph===6) { ax =  1.0 + Math.random()*0.2; ay = Math.random()*0.1-0.05; }
+    else if (ph===7) { ax =  0.2 + Math.random()*0.1; ay = Math.random()*0.05; }
+    const az = 9.8 + Math.random()*0.1 - 0.05;
+    processSample(ax, ay, az, gyZ);
+  }, CFG.DT * 1000);
+}
+
+// ── REAL SENSOR INIT ─────────────────────────
+async function initRealSensors() {
+  // DeviceMotion (accelerometer + gyroscope)
+  if (typeof DeviceMotionEvent !== 'undefined' &&
+      typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const perm = await DeviceMotionEvent.requestPermission();
+      if (perm !== 'granted') { fallbackToSim(); return; }
+    } catch(e) { fallbackToSim(); return; }
+  }
+
+  const onMotion = (e) => {
+    if (!S.running) return;
+    const acc = e.accelerationIncludingGravity;
+    const rot = e.rotationRate;
+    if (!acc || acc.x === null) return;
+    if (!S.gotRealSensor) {
+      S.gotRealSensor = true;
+      clearTimeout(S.sensorCheckTimer);
+      $('sim-badge').style.display = 'none';
+    }
+    processSample(
+      acc.x||0, acc.y||0, acc.z||9.8,
+      rot ? Math.abs(rot.alpha||rot.gamma||0) : 0
+    );
+  };
+
+  window.addEventListener('devicemotion', onMotion);
+  window._onMotion = onMotion;
+
+  // If no real sensor fires in 600ms, fallback to simulation
+  S.sensorCheckTimer = setTimeout(() => {
+    if (!S.gotRealSensor) fallbackToSim();
+  }, 600);
+}
+
+function fallbackToSim() {
+  const note = $('perm-note');
+  note.style.display = 'block';
+  note.textContent = 'No physical sensor found — running in simulation mode. On iPhone/Android, open via HTTPS and grant motion permission.';
+  startSimulation();
+}
+
+// ── START RIDE ───────────────────────────────
+async function startRide() {
+  // Reset state
+  Object.assign(S, {
+    running:true, score:100, speed:0, prevAx:0, jerk:0,
+    brakeCount:0, brakeHR:0, accelCount:0, turnCount:0,
+    overspeedFr:0, totalEvents:0, maxSpeed:0, penalty:0,
+    axBuf:[], ayBuf:[], eventBuf:[],
+    chartAx: new Array(CFG.CHART_WIN).fill(0),
+    chartAy: new Array(CFG.CHART_WIN).fill(0),
+    chartEvents: new Array(CFG.CHART_WIN).fill(false),
+    sensorTimer:null, rideStartMs:Date.now(),
+    voiceLastMs:0, simPhase:0, simT:0, gotRealSensor:false,
+  });
+
+  $('stat-brakes').textContent = '0';
+  $('stat-turns').textContent  = '0';
+  $('stat-accel').textContent  = '0';
+  $('stat-overspeed').textContent = '0';
+  $('events-count-badge').textContent = '0 events';
+  $('events-feed').innerHTML = '<div class="no-events-msg">No unsafe events detected — ride safely!</div>';
+  $('perm-note').style.display = 'none';
+  $('sim-badge').style.display = 'none';
+  $('alert-banner').className = '';
+
+  updateScoreUI();
+  showScreen('ride');
+  setTimeout(() => { initCharts(); drawLiveChart(); }, 100);
+  initRealSensors();
+}
+
+// ── STOP RIDE ────────────────────────────────
+function stopRide() {
+  S.running = false;
+  if (S.sensorTimer) { clearInterval(S.sensorTimer); S.sensorTimer = null; }
+  if (window._onMotion) window.removeEventListener('devicemotion', window._onMotion);
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  showSummary();
+}
+
+// ── SUMMARY SCREEN ───────────────────────────
+function showSummary() {
+  const duration = Math.round((Date.now() - S.rideStartMs)/1000);
+  const durationMin = (duration/60).toFixed(1);
+  const s = Math.max(0, Math.round(S.score));
+
+  // Date
+  $('s-date').textContent = new Date().toLocaleString();
+
+  // Score ring (circumference 2π×56 ≈ 352)
+  const offset = 352 - (s/100)*352;
+  const arc = $('s-ring-arc');
+  arc.style.strokeDashoffset = offset;
+  $('s-score-num').textContent = s;
+
+  let grade, statusTxt, color, tip;
+  if (s>=90)     { grade='A+'; statusTxt='Excellent Rider'; color='var(--safe)'; tip='Exceptional ride! Maintain this level.'; }
+  else if (s>=80){ grade='A';  statusTxt='Safe Rider';       color='var(--safe)'; tip='Great ride. Minor events recorded.'; }
+  else if (s>=70){ grade='B';  statusTxt='Good Rider';       color='#86EFAC'; tip='Generally safe but some improvement needed.'; }
+  else if (s>=60){ grade='C';  statusTxt='Average Rider';    color='var(--warn)'; tip='Several unsafe events. Review suggestions.'; }
+  else if (s>=50){ grade='D';  statusTxt='Needs Improvement';color='var(--warn)'; tip='Significant unsafe behavior detected.'; }
+  else           { grade='F';  statusTxt='Unsafe Rider';     color='var(--risky)'; tip='Dangerous riding patterns. Please improve immediately.'; }
+
+  arc.style.stroke = color;
+  $('s-score-num').style.color = color;
+  $('s-grade').textContent = grade; $('s-grade').style.color = color;
+  $('s-status').textContent = statusTxt; $('s-status').style.color = color;
+  $('s-tip').textContent = tip;
+
+  $('s-duration').textContent = durationMin;
+  $('s-max-speed').textContent = (S.maxSpeed*3.6).toFixed(1);
+  $('s-events').textContent = S.totalEvents;
+  $('s-events-sub').textContent = `${S.brakeHR} in high-risk zone`;
+  $('s-penalty').textContent = S.penalty.toFixed(1);
+
+  // Breakdown bars (normalize to max event count)
+  const maxC = Math.max(S.brakeCount, S.accelCount, S.turnCount, 1);
+  const setBreakdown = (id, count, detail, barId, barColor) => {
+    $(id).textContent = count;
+    $(id+'-detail')||($('bd-'+id.split('-')[1]+'-detail') && ($('bd-'+id.split('-')[1]+'-detail').textContent = detail));
+    if (barId) {
+      $(barId).style.width = (count/maxC*100)+'%';
+      $(barId).style.background = barColor;
+    }
+  };
+  $('bd-brake-count').textContent = S.brakeCount;
+  $('bd-brake-detail').textContent = S.brakeHR > 0 ? `${S.brakeHR} in high-risk zone` : 'In normal zones';
+  $('bd-brake-bar').style.width = (S.brakeCount/maxC*100)+'%';
+
+  $('bd-accel-count').textContent = S.accelCount;
+  $('bd-accel-detail').textContent = `Threshold: ${CFG.SUDDEN_ACCEL_THRESH} m/s²`;
+  $('bd-accel-bar').style.width = (S.accelCount/maxC*100)+'%';
+
+  $('bd-turn-count').textContent = S.turnCount;
+  $('bd-turn-detail').textContent = `Sharp turns >45°/s`;
+  $('bd-turn-bar').style.width = (S.turnCount/maxC*100)+'%';
+
+  $('bd-speed-count').textContent = S.overspeedFr;
+  $('bd-speed-detail').textContent = `Frames above speed limit`;
+  $('bd-speed-bar').style.width = Math.min(100, (S.overspeedFr/50)*100)+'%';
+
+  // Suggestions
+  const suggs = buildSuggestions(s);
+  $('suggestions-list').innerHTML = suggs.map((t,i) =>
+    `<div class="suggestion-item">
+       <div class="suggestion-num">${i+1}</div>
+       <div class="suggestion-txt">${t}</div>
+     </div>`
+  ).join('');
+
+  // Draw summary chart with stored ax buffer
+  showScreen('summary');
+  setTimeout(() => {
+    initCharts();
+    const axSlice = S.axBuf.length > 200 ? S.axBuf.slice(-200) : S.axBuf;
+    const evSlice = S.eventBuf.slice(-200).map(e => true);
+    const evAr = new Array(axSlice.length).fill(false);
+    S.eventBuf.forEach(ev => { /* mark approximate positions */ });
+    drawSummaryChart(axSlice, evAr);
+  }, 150);
+}
+
+function buildSuggestions(score) {
+  const s = [];
+  if (S.brakeCount > 0)  s.push(`Reduce harsh braking — ${S.brakeCount} event${S.brakeCount>1?'s':''} detected. Anticipate stops earlier and apply brakes gradually.`);
+  if (S.accelCount > 0)  s.push(`Smooth out acceleration — ${S.accelCount} sudden acceleration event${S.accelCount>1?'s':''} recorded. Roll the throttle on progressively.`);
+  if (S.turnCount > 0)   s.push(`Take corners safely — ${S.turnCount} sharp turn${S.turnCount>1?'s':''} logged. Slow down before entering turns, not during.`);
+  if (S.overspeedFr > 5) s.push(`Respect speed limits — you exceeded the limit ${S.overspeedFr} times. In high-risk zones the limit is 30 km/h.`);
+  if (S.brakeHR > 0)     s.push(`Extra caution in high-risk zones — ${S.brakeHR} harsh brake event${S.brakeHR>1?'s':''} in school/hospital areas.`);
+  if (score >= 85)        s.push('Great overall ride! Continue maintaining safe following distances and smooth inputs.');
+  if (s.length === 0)     s.push('Perfect ride! Zero unsafe events — excellent control and situational awareness.');
+  return s.slice(0, 5);
+}
+
+// ── CONTROLS ─────────────────────────────────
+$('btn-begin').addEventListener('click', startRide);
+$('btn-stop').addEventListener('click', stopRide);
+$('btn-new-ride').addEventListener('click', () => showScreen('home'));
+
+// Zone toggle
+$('zone-switch').addEventListener('click', () => {
+  S.inHR = !S.inHR;
+  $('zone-switch').classList.toggle('on', S.inHR);
+  $('zone-bar').classList.toggle('active', S.inHR);
+  $('zone-name-txt').textContent = S.inHR ? 'High-Risk Zone Active' : 'Normal Zone';
+  $('zone-info-txt').textContent = S.inHR
+    ? 'Speed limit: 30 km/h · Double penalties apply'
+    : 'Speed limit: 50 km/h · Standard penalties';
+  if (S.inHR) { showAlert('hrzone'); speak('hrzone'); }
+});
+
+// Voice toggle
+$('voice-toggle').addEventListener('click', () => {
+  S.voiceOn = !S.voiceOn;
+  $('voice-toggle').classList.toggle('on', S.voiceOn);
+  $('voice-toggle').lastChild.textContent = S.voiceOn ? 'Voice' : 'Muted';
+});
+
+// Sensitivity slider
+$('sens-slider').addEventListener('input', e => {
+  CFG.HARSH_BRAKE_THRESH = parseFloat(e.target.value);
+  $('sens-val').textContent = CFG.HARSH_BRAKE_THRESH.toFixed(1)+' m/s²';
+  $('m-thresh').textContent = CFG.HARSH_BRAKE_THRESH.toFixed(1);
+});
+
+// ── BOOT ─────────────────────────────────────
+window.addEventListener('load', () => {
+  showScreen('home');
+});
+</script>
+</body>
+</html>
