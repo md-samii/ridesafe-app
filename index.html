@@ -672,7 +672,7 @@ input[type=range]::-webkit-slider-thumb {
       <div class="home-badge-dot"></div>
       Physics-Based · Context-Aware · Real-Time
     </div>
-
+    <button onclick="enableSensors()">Enable Sensors</button>
     <button class="btn-start" id="btn-begin">
       <div class="btn-start-inner">
         <div class="btn-start-icon">🏍</div>
@@ -1294,21 +1294,21 @@ function processSample(ax, ay, az, gyroZ) {
 
   if ((Date.now() - S.rideStartMs) < 3000) return;
 
-  function applyDeadZone(value, threshold = 0.3) {
+  function applyDeadZone(value, threshold = 0.05) {
     return Math.abs(value) < threshold ? 0 : value;
     }
 
     ax = applyDeadZone(ax);
     ay = applyDeadZone(ay);
     
-    const alpha = 0.9;
-    ax = alpha * prevX + (1 - alpha) * ax;
-    ay = alpha * prevY + (1 - alpha) * ay;
-    az = alpha * prevZ + (1 - alpha) * az;
+    const alpha = 0.6;
+    ax = alpha * (S.prevX || 0) + (1 - alpha) * ax;
+    ay = alpha * (S.prevY || 0) + (1 - alpha) * ay;
+    az = alpha * (S.prevZ || 9.8) + (1 - alpha) * az;
 
-    prevX = ax;
-    prevY = ay;
-    prevZ = az;
+    S.prevX = ax;
+    S.prevY = ay;
+    S.prevZ = az;
 
   // Raw display
   $('s-ax').textContent = ax.toFixed(2);
@@ -1646,6 +1646,25 @@ if (navigator.geolocation) {
             S.speed = pos.coords.speed; // real speed in m/s
         }
     });
+}
+
+function enableSensors() {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission()
+        .then(permissionState => {
+            if (permissionState === 'granted') {
+                window.addEventListener('devicemotion', handleMotion);
+                alert("Sensors Enabled ✅");
+            } else {
+                alert("Permission denied ❌");
+            }
+        })
+        .catch(console.error);
+    } else {
+        // Android case
+        window.addEventListener('devicemotion', handleMotion);
+        alert("Sensors Enabled (Android) ✅");
+    }
 }
 </script>
 </body>
